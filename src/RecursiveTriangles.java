@@ -1,13 +1,23 @@
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 
 public class RecursiveTriangles implements ComponentListener {
 
 
     public static void main (String[] args){
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (ClassNotFoundException | InstantiationException | UnsupportedLookAndFeelException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
         new RecursiveTriangles("Triangles", 1280, 720).setVisible();
     }
 
@@ -17,12 +27,14 @@ public class RecursiveTriangles implements ComponentListener {
     private Color backgroundColor;
     private int limit;
     private boolean rnd;
+    private boolean borders;
 
     private Image canvasImage;
 
-    public RecursiveTriangles(String title, int width, int height){
+    private RecursiveTriangles(String title, int width, int height){
         limit = 10;
         rnd = false;
+        borders = false;
         frame = new JFrame();
         canvas = new CanvasPane();
         frame.setContentPane(canvas);
@@ -30,12 +42,95 @@ public class RecursiveTriangles implements ComponentListener {
         canvas.setPreferredSize(new Dimension(width, height));
         backgroundColor = Color.white;
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        setupMenu();
         //frame.addWindowStateListener(e -> setVisible());
         frame.addComponentListener(this);
         frame.pack();
     }
 
-    void setVisible() {
+    private void setupMenu() {
+        JMenuBar menubar = new JMenuBar();
+        frame.setJMenuBar(menubar);
+
+        JMenu file = new JMenu("file");
+        menubar.add(file);
+
+        JMenuItem export = new JMenuItem("export png");
+        export.addActionListener(e -> {
+            try {
+                // retrieve image
+                BufferedImage bi = getMyImage();
+                File outputfile = new File("saved.png");
+                ImageIO.write(bi, "png", outputfile);
+            } catch (IOException ignored) {
+            }
+        });
+        file.add(export);
+
+        JMenuItem quit = new JMenuItem("quit");
+        quit.addActionListener(e -> frame.dispose());
+        file.add(quit);
+
+        JMenu menu = new JMenu("edit");
+        menubar.add(menu);
+
+        JMenuItem redraw = new JMenuItem("redraw");
+        redraw.addActionListener(e -> {
+            colors.clear();
+            canvas.repaint();
+        });
+        menu.add(redraw);
+
+        JCheckBoxMenuItem randomBox = new JCheckBoxMenuItem("random colors");
+        randomBox.addActionListener(e -> {
+            rnd = randomBox.getState();
+            canvas.repaint();
+        });
+        menu.add(randomBox);
+
+        JCheckBoxMenuItem bordersBox = new JCheckBoxMenuItem("triangle borders");
+        bordersBox.addActionListener(e -> {
+            borders = bordersBox.getState();
+            canvas.repaint();
+        });
+        menu.add(bordersBox);
+
+        JMenu about = new JMenu("about");
+        menubar.add(about);
+
+        JMenuItem githubLink = new JMenuItem("GitHub");
+        githubLink.addActionListener(e -> {
+            Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
+            if (desktop != null && desktop.isSupported(Desktop.Action.BROWSE)) {
+                try {
+                    desktop.browse(new URI("https://github.com/potatoTVnet/recursive-triangles"));
+                } catch (Exception ignored) {
+                }
+            }
+        });
+        about.add(githubLink);
+
+        JMenuItem wikipediaLink = new JMenuItem("Sierpinski triangles ?");
+        wikipediaLink.addActionListener(e -> {
+            Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
+            if (desktop != null && desktop.isSupported(Desktop.Action.BROWSE)) {
+                try {
+                    desktop.browse(new URI("https://en.wikipedia.org/wiki/Sierpinski_triangle"));
+                } catch (Exception ignored) {
+                }
+            }
+        });
+        about.add(wikipediaLink);
+
+        JLabel aboutText = new JLabel("Version 1.2 | 2017/06/24");
+        about.add(aboutText);
+    }
+
+    private BufferedImage getMyImage() {
+        return (BufferedImage) canvasImage;
+    }
+
+    private void setVisible() {
         if(graphic == null && !frame.isVisible()) {
             Dimension size = canvas.getSize();
             sizeHandler(size);
@@ -44,7 +139,7 @@ public class RecursiveTriangles implements ComponentListener {
     }
 
 
-    void drawTriangle(int length, int xpos, int ypos, int stageID, boolean random){
+    private void drawTriangle(int length, int xpos, int ypos, int stageID, boolean random, boolean borders){
 
         Color col;
         if (random) col = randomColor();
@@ -72,10 +167,12 @@ public class RecursiveTriangles implements ComponentListener {
         graphic.draw(p);
         graphic.fillPolygon(p);
 
-        graphic.setColor(Color.WHITE);
-        graphic.drawLine(x1, y1, x2, y2);
-        graphic.drawLine(x1, y1, x3, y3);
-        graphic.drawLine(x2, y2, x3, y3);
+        if (borders) {
+            graphic.setColor(Color.WHITE);
+            graphic.drawLine(x1, y1, x2, y2);
+            graphic.drawLine(x1, y1, x3, y3);
+            graphic.drawLine(x2, y2, x3, y3);
+        }
 
         int newlength = length/2;
         int newx = (x1+x3)/2;
@@ -83,9 +180,9 @@ public class RecursiveTriangles implements ComponentListener {
 
         if (length>limit) {
             stageID++;
-            drawTriangle(newlength, newx, newy, stageID, random);
-            drawTriangle(newlength, x1, y1, stageID, random);
-            drawTriangle(newlength, xm, ym, stageID, random);
+            drawTriangle(newlength, newx, newy, stageID, random, borders);
+            drawTriangle(newlength, x1, y1, stageID, random, borders);
+            drawTriangle(newlength, xm, ym, stageID, random, borders);
         }
     }
 
@@ -97,7 +194,7 @@ public class RecursiveTriangles implements ComponentListener {
             return colors.get(stageID);
         } else {
             colors.add(randomColor());
-            return colors.get(stageID);
+            return getColor(stageID);
         }
     }
 
@@ -148,10 +245,10 @@ public class RecursiveTriangles implements ComponentListener {
             Dimension size = frame.getSize();
             g.fillRect(0, 0, size.width, size.height);
             if (size.height<= size.width){
-                drawTriangle(size.height-(int)(size.height*0.1), (int) (size.width*0.05), size.height-(int) (size.height*0.1), 0, rnd);
+                drawTriangle(size.height-(int)(size.height*0.1), (int) (size.width*0.05), size.height-(int) (size.height*0.2), 0, rnd, borders);
             }
             else {
-                drawTriangle(size.width-(int)(size.width*0.1), (int) (size.width*0.05), size.height - (int) (size.height*0.1), 0, rnd);
+                drawTriangle(size.width-(int)(size.width*0.1), (int) (size.width*0.05), size.height - (int) (size.height*0.2), 0, rnd, borders);
             }
             g.drawImage(canvasImage, 0, 0, null);
 
