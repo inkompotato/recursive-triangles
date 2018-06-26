@@ -32,9 +32,9 @@ public class RecursiveTriangles implements ComponentListener {
     private Image canvasImage;
 
     private RecursiveTriangles(String title, int width, int height){
-        limit = 10;
+        limit = 5;
         rnd = false;
-        borders = false;
+        borders = true;
         frame = new JFrame();
         canvas = new CanvasPane();
         frame.setContentPane(canvas);
@@ -46,6 +46,7 @@ public class RecursiveTriangles implements ComponentListener {
         //frame.addWindowStateListener(e -> setVisible());
         frame.addComponentListener(this);
         frame.pack();
+
     }
 
     private void setupMenu() {
@@ -75,10 +76,7 @@ public class RecursiveTriangles implements ComponentListener {
         menubar.add(menu);
 
         JMenuItem redraw = new JMenuItem("redraw");
-        redraw.addActionListener(e -> {
-            colors.clear();
-            canvas.repaint();
-        });
+        redraw.addActionListener(e -> redraw());
         menu.add(redraw);
 
         JCheckBoxMenuItem randomBox = new JCheckBoxMenuItem("random colors");
@@ -93,7 +91,23 @@ public class RecursiveTriangles implements ComponentListener {
             borders = bordersBox.getState();
             canvas.repaint();
         });
+        bordersBox.setState(true);
         menu.add(bordersBox);
+
+        JMenuItem limitSetterI = new JMenuItem("increase stage limit");
+        limitSetterI.addActionListener(e -> {
+            limit++;
+            canvas.repaint();
+        });
+        menu.add(limitSetterI);
+
+        JMenuItem limitSetterD = new JMenuItem("decrease stage limit");
+        limitSetterD.addActionListener(e -> {
+            limit--;
+            if (limit < 0) limit = 0;
+            canvas.repaint();
+        });
+        menu.add(limitSetterD);
 
         JMenu about = new JMenu("about");
         menubar.add(about);
@@ -126,6 +140,11 @@ public class RecursiveTriangles implements ComponentListener {
         about.add(aboutText);
     }
 
+    private void redraw() {
+        colors.clear();
+        canvas.repaint();
+    }
+
     private BufferedImage getMyImage() {
         return (BufferedImage) canvasImage;
     }
@@ -154,7 +173,7 @@ public class RecursiveTriangles implements ComponentListener {
         int xm = (x1+x2)/2;
         int ym = y1;
 
-        int h = (int) ((length/2)*Math.sqrt(3));
+        int h = (int) Math.round((length/2F)*Math.sqrt(3F));
 
         int y3 = ym - h;
         int x3 = xm;
@@ -174,11 +193,11 @@ public class RecursiveTriangles implements ComponentListener {
             graphic.drawLine(x2, y2, x3, y3);
         }
 
-        int newlength = length/2;
+        int newlength = Math.round(length/2);
         int newx = (x1+x3)/2;
         int newy = (y1+y3)/2;
 
-        if (length>limit) {
+        if (stageID<limit) {
             stageID++;
             drawTriangle(newlength, newx, newy, stageID, random, borders);
             drawTriangle(newlength, x1, y1, stageID, random, borders);
@@ -242,13 +261,13 @@ public class RecursiveTriangles implements ComponentListener {
     {
         public void paint(Graphics g)
         {
-            Dimension size = frame.getSize();
+            Dimension size = frame.getContentPane().getSize();
             g.fillRect(0, 0, size.width, size.height);
             if (size.height<= size.width){
-                drawTriangle(size.height-(int)(size.height*0.1), (int) (size.width*0.05), size.height-(int) (size.height*0.2), 0, rnd, borders);
+                drawTriangle(size.height-(int)(size.height*0.1), (int) (size.width*0.05), size.height-(int) (size.height*0.05), 0, rnd, borders);
             }
             else {
-                drawTriangle(size.width-(int)(size.width*0.1), (int) (size.width*0.05), size.height - (int) (size.height*0.2), 0, rnd, borders);
+                drawTriangle(size.width-(int)(size.width*0.1), (int) (size.width*0.05), size.height - (int) (size.height*0.05), 0, rnd, borders);
             }
             g.drawImage(canvasImage, 0, 0, null);
 
